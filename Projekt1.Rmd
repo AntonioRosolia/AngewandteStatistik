@@ -1,0 +1,175 @@
+# SD Projekt 1
+Authoren: Antonio Rosolia
+
+Kurs: Statistisches Denken; FS2018
+
+Interstaatliche Hochschule für Technik Buchs - NTB
+
+18.06.2018
+
+## Projekt 1: Vergleich mit einem Sollwert
+
+#### Ausgangspunkt
+In der Datei Data Projekt1.csv finden Sie die Messreihe zu einer quantitativen Eigenschaft einesProduktes, wobei 150 Einzelinstanzen gemessen wurden. Der erwartete Wert der Messgrösse ist laut Hersteller gleich 1.4.
+
+#### a) Visualisierung der Daten
+
+Um einen ersten optischen Eindruck zu gewinnen, empfiehlt sich hier der Boxplot. Damit kann man schnell erahnen in welchem Bereich die Daten liegen und wie sie sich über diesen Bereich verteilen. Zudem werden der Median, das untere und obere Quantil und die beiden Extremwerte dargestellt.
+```{r, fig.width=11, fig.height=4, fig.align='center'}
+data <- read.csv("Data_Projekt1.csv" , header = F)
+names(data) <- "Messgroesse"
+m <- data$Messgroesse
+soll <- 1.4
+
+boxplot(m, ylim = c(0, 15), 
+        col = c(col=rgb(0,0,1,1/4)), 
+        xlab = "Messgrössen", 
+        horizontal = TRUE)
+axis(side=1, at=c(0:16))
+abline(v=1.4, col = "Red")
+legend("topright", c("Sollwert"), fill = c("red"))
+```
+
+Wie im Boxlpot ersichtlich ist, hat es einige milde Ausreisser (zwischen 1.5xIQR und 3xIQR) und starke Aussreisser (grösser als 3xIQR) gegen rechts. Da sich der Median innerhalb der Box leicht links befindet, kann außerdem auf eine Rechtsschiefe der zugrundeliegenden Verteilung der Messdaten geschlossen werden. Diese Verteilung wird außerdem vermutlich keine Normalverteilung sein, da der Box-Plot unsymmetrisch ist und vergleichsweise viele Ausreißer enthält.
+
+
+Um den Verlauf der Häufigkeitsverteilung einzusehen, wird zusätzlich ein Histogramm erstellt, bei dem die Dichtefunktion eingezeichnet ist. 
+```{r, fig.width=11, fig.height=7, fig.align='center'}
+
+
+par(xaxs = "i")
+par(yaxs = "i")
+hist(m, col=rgb(0,0,1,1/4), nclass = 20, xlim = c(0, 15), ylim=c(0,1), xlab = "Maximale Zugkraft in N", freq = F)
+lines(density(m),col="blue",lwd=4)
+abline(v = mean(m), col = "blue", lwd = 2)
+abline(v=1.4, col = "Red")
+grid()
+legend("topright", c("Messgrössen", "Mittelwert Messgrössen", "Dichtefunktionen Messgrössen","Sollwert Hersteller"), fill = c(rgb(0,0,1,1/4), "blue", "blue","red"))
+```
+
+Dieses Histogramm weist auf, dass die Daten nicht normalverteilt sind.
+
+```{r, fig.width=7, fig.height=7, fig.align='center'}
+par(xaxs = "i")
+par(yaxs = "i")
+qqnorm(m, col=c("blue"), ylim=c(0,10))
+qqline(m)
+grid()
+box(lwd = 1)
+```
+
+
+
+[1] Auch aus dem Q-Q Plot ist erstichtlich, dass die Daten nicht normalverteilt sind. Wenn die Merkmalswerte aus der Vergleichsverteilung stammen, stimmen die empirischen und die theoretischen Quantile annähernd überein, die Werte würden auf einer Diagonalen liegen. Da es aber nicht empfehlenswert ist, nur aufgrund des Histogrammes oder des Q-Q Plotes auf Normalverteilung zu schliessen, wird sie auch noch mathematisch bewiesen. Daher wird zusätzlich der Shapiro-Wilk-Test durchgeführt.
+
+```{r}
+shapiro.test(m)
+```
+
+[2] Der p-Wert der Shapiro-Wilk-Tests ist $p$ = 4.975e-16 und liegt damit unter dem Signifikanzniveau von 0,05. Damit kann davon ausgegangen werden, dass die Daten von einer Normalverteilung abweichen.
+
+### b) Transformation der Daten
+
+[3] Da unsere Daten rechtsschief sind, empfiehlt sich hier eine logarithimische Transformation um sie symetrischer zu machen. [4] Dies entspricht einer Box-Cox Transformation von $\lambda$ = 0.
+Um ein Gefühl für die transformierten Daten zu bekommen wird zuerst ein Boxplot durchgeführt.
+
+```{r, fig.width=11, fig.height=4, fig.align='center'}
+boxplot(log(m), 
+        col = c(col=rgb(0,0,1,1/4)), 
+        xlab = "Messgrössen",
+        main = "Boxplot mit transformierten Daten",
+        horizontal = TRUE)
+axis(side=1, at=c(0:16))
+abline(v=log(1.4), col = "Red")
+legend("topright", c("Sollwert"), fill = c("red"))
+```
+Der Boxplot sieht sehr symmetrisch aus mit nur einem Ausreisser.
+
+
+Um die Verteilung noch besser zu sehen wird ein Histogramm und ein Q-Q Plot der transformierten Daten erstellt.
+
+```{r, fig.width=7, fig.height=7, fig.align='center'}
+par(xaxs = "i")
+par(yaxs = "i")
+qqnorm(log(m), col=c("blue"), ylim=c(0,10), main = "Q-Q Plot mit transformierten Daten")
+qqline(log(m))
+grid()
+box(lwd = 1)
+```
+
+```{r, fig.width=11, fig.height=7, fig.align='center'}
+par(xaxs = "i")
+par(yaxs = "i")
+hist(log(m), col=rgb(0,0,1,1/4), nclass = 20, ylim=c(0,1.5), xlab = "Maximale Zugkraft in N", freq = F, main = "Histogramm mit transformierten Daten")
+lines(density(log(m)),col="blue",lwd=4)
+abline(v = mean(log(m)), col = "blue", lwd = 2)
+abline(v=log(1.4), col = "Red")
+grid()
+legend("topright", c("Messgrössen", "Mittelwert Messgrössen", "Dichtefunktionen Messgrössen","Sollwert Hersteller"), fill = c(rgb(0,0,1,1/4), "blue", "blue","red"))
+```
+
+Diese Plots zeigen eine optisch herovrragende Normalverteilung an. Da es aber nicht empfehlenswert ist, die Normalverteilung nur aufgrund des Histogrammes oder Q-Q Plot zu erschliessen, wird es auch noch mathematisch bewiesen. Daher wird zusätzlich der Shapiro-Wilk-Test durchgeführt
+
+```{r}
+shapiro.test(log(m))
+```
+[2] Von der Ausgabe, dass $p$ = 0.6027 ist und damit > 0.05, was bedeutet, dass sich die Verteilung der Daten nicht wesentlich von der Normalverteilung unterscheidet. Mit anderen Worten, wir können von einer Normalverteilung ausgehen.
+
+
+### c) t-Test
+Nun wird ein ein-Stichproben t-Test mit den transformierten Daten durchgeführt. Es wird zum Signifikanzniveau. $\alpha = 5\%$ getestet. Die Hypothese lautet:
+$$
+H_0: \mu = ln(1.4)
+$$
+$$
+H_1: \mu \not = ln(1.4)
+$$
+
+
+```{r, fig.width=6, fig.height=6, fig.align='center'}
+t.test(log(m), alternative = "two.sided", mu = log(1.4))
+```
+
+Die Nullhypothese wird verworfen, weil der p-Wert von $p$ = 0.0003133 kleiner ist als das festgelegte Signifikanzniveau. Daher ist dieser Test statistisch hoch signifikant. Dies bedeutet, dass der transformierte Sollwert und der Erwartungswert der transformierten Daten nicht gleich sind. Wie aufschlussreich dieser Test ist, ist jedoch fragwürdig, weil dies keine lineare Transformation war und es für die nicht transformierten Daten anders ausfallen könnte.
+
+[5]Bei genügenden Messdaten, ist der t-Test relativ robust, falls diese von einer Normalverteilung abweichen. Daher wird der t-Test mit den nicht transformierten Daten durchgeführt. Es wird zum Signifikanzniveau von $\alpha = 5\%$ getestet:
+$$
+H_0: \mu = 1.4
+$$
+$$
+H_1: \mu \not = 1.4
+$$
+
+```{r, fig.width=6, fig.height=6, fig.align='center'}
+t.test(m, alternative = "two.sided", mu=1.4)
+```
+Die Nullhypothese kann nicht verworfen werden, weil der p-Wert von $p$ = 0.07095 grösser ist als das festgelegte Signifikanzniveau. Daher muss den Herstellerangaben geglaubt werden.
+
+
+[6] Weil die Messwertreihe nicht normalverteilt sind, wäre hier der Wilcoxon Rangsummentest der beste Test.
+Es wird zum Signifikanzniveau von $\alpha = 5\%$ getestet:
+$$
+H_0: \mu = 1.4
+$$
+$$
+H_1: \mu \not = 1.4
+$$
+
+```{r}
+wilcox.test(m, alternative = "two.sided", mu = 1.4)
+```
+Die Nullhypothese kann nicht verworfen werden, weil der p-Wert von $p$ = 0.3943 grösser ist als das festgelegte Signifikanzniveau. Daher muss auch jetzt noch den Herstellerangaben geglaubt werden.
+
+
+### Quellen
+[1] https://en.wikipedia.org/wiki/Q%E2%80%93Q_plot
+
+[2] http://www.sthda.com/english/wiki/normality-test-in-r
+
+[3] https://statistikguru.de/spss/vorraussetzungen-ueberpruefen/daten-transformieren/bekannte-datentransformationen.html
+
+[4] https://brainder.org/2011/07/17/log-normality-and-the-box-cox-transformation/
+
+[5] https://support.minitab.com/en-us/minitab/18/Assistant_One_Sample_t.pdf
+
+[6] https://www.stat.auckland.ac.nz/~wild/ChanceEnc/Ch10.wilcoxon.pdf
