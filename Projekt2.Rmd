@@ -1,0 +1,143 @@
+# SD Projekt 2
+Authoren: Antonio Rosolia
+
+Kurs: Statistisches Denken; FS2018
+
+Interstaatliche Hochschule für Technik Buchs - NTB
+
+18.06.2018
+
+## Projekt 2: Vergleich von Mittelwerten
+
+#### Ausgangspunkt
+In den Dateien Produkt0.txt und Produkt1.txt befinden sich Messreihen der maximalen Zugkraft (in N), die auf ein bestimmtes Bauteil ausgeübt werden kann, bevor es zu dessen Zerstörung kommt. Dabei ist "Produkt0" das bestehende Produkt und "Produkt1" eine Neuentwicklung.
+
+#### a) Visualisierung der Daten
+Um einen ersten optischen Eindruck zu gewinnen, empfiehlt sich hier der Boxplot. Damit kann man schnell erahnen in welchem Bereich die Daten liegen und wie sie sich über diesen Bereich verteilen. Zudem werden der Median, das untere und obere Quantil und die beiden Extremwerte dargestellt.
+
+```{r, fig.width=11, fig.height=7, fig.align='center'}
+data <- read.csv("Produkt0.txt", header = F)
+names(data) <- "Produkt0"
+p0 <- data$Produkt0
+
+data <- read.csv("Produkt1.txt", header = F)
+names(data) <- "Produkt1"
+p1 <- data$Produkt1
+
+boxplot(p1,p0, ylim = c(0, 7000), 
+        names = c("Produkt 1", "Produkt 0"), 
+        col = c(col=rgb(1,0,0,1/4),rgb(0,0,1,1/4)), 
+        xlab = "Maximale Zugkraft in N", 
+        horizontal = TRUE)
+
+```
+Wie im Boxlpot ersichtlich ist, haben beide einige milde Ausreisser (zwischen 1.5xIQR und 3xIQR) und starke Aussreisser (grösser als 3xIQR) gegen rechts. Der gesamte Boxlplot von Produkt1 hat sich nach rechts verschoben. Zudem sieht man dass die Daten eher linksschief sind. Daher deutet der Boxplot schon an, dass sich die Neuentwicklung ausgezahlt hat. Um diese Behauptung mathematisch zu beweisen, wird ein t-Test erstellt.
+
+#### b) Durchführung eines t-Tests
+[1] Bevor ein t-Test durchgeführt wird, sollte man zuerst die Voraussetzungen überprüfen. Diese wären:
+
+  1) Die abhängige Variable ist intervallskaliert.
+  2) Es liegt eine unabhängige Variable vor, mittels der die beiden zu vergleichenden Gruppen gebildet werden.
+  3) Das untersuchte Merkmal ist in den Grundgesamtheiten der beiden Gruppen normalverteilt.
+  4) Homogenität der Varianzen: Die Gruppen kommen aus Grundgesamtheiten mit annähernd identischer Varianz.
+  5) Die einzelnen Messwerte sind voneinander unabhängig (das Verhalten einer Versuchsperson hat keinen Einfluss auf das Verhalten einer anderen).
+
+
+Da wir die Daten von einer Fachperson erhalten haben, können die Punkte 1,2 und 5 als erfüllt angesehen werden.
+
+
+[2][3] Zuerst wird überprüft ob die Varianzen homogen (im wesentlichen gleich) sind. Daher wird zuerst ein F-Test durchgeführt. Die Nullhypotehse lautet:
+$$
+H_0: \sigma_0^2  = \sigma_1^2 \quad 
+$$
+Es wird behauptet, dass die Varianz von Produkt 0, gleich der Varianz von Produkt 1 entspricht.
+
+Die Alternativbehauptung lautet:
+$$
+H_1: \sigma_0^2  \not = \sigma_1^2 \quad 
+$$
+Es wird getestet zum Niveau $\alpha = 5 \%$
+
+```{r}
+var.test(p0,p1)
+```
+Der p-Wert des F-Tests ist $p$ = 0.1846 und liegt damit über dem Signifikanzniveau von 0,05. Zusammenfassend lässt sich sagen, dass es keinen signifikanten Unterschied zwischen den beiden Varianzen gibt.
+
+
+Nun wird überprüft, ob die Daten normalverteilt sind.
+Zuerst wird ein optischer Test mittels eines Histogrammes erstellt. Im folgendem Histogramm sind auch die Dichtefunktionen von den Messwerten von P0 und P1 enthalten. Zudem wird der Mittelwert für beide Messwertreihen erstellt.
+
+```{r, fig.width=11, fig.height=7, fig.align='center'}
+par(xaxs = "i")
+par(yaxs = "i")
+hist(p0, col=rgb(0,0,1,1/4), nclass = 150, xlim = c(0, 7000), ylim =c(0,0.004), xlab = "Maximale Zugkraft in N", freq = F,main="Histogramm von P0 und P1")
+hist(p1, col=rgb(1,0,0,1/4), nclass = 150, add=T, freq = F)
+lines(density(p0),col="blue",lwd=4)
+lines(density(p1), col = "red", lwd = 4)
+abline(v = mean(p0), col = "blue", lwd = 2)
+abline(v = mean(p1), col = "red", lwd = 2)
+grid()
+legend("topright", c("Produkt 0", "Mittelwert Produkt 0", "Dichtefunktion Prdoukt 0","Produkt 1", "Mittelwert Produkt 1","Dichtefunktion Produkt 2"), fill = c(rgb(0,0,1,1/4), "blue", "blue", rgb(1,0,0,1/4), "red", "red"))
+
+```
+In diesem Histogram kann man gut sehen, dass die Daten von einer Normalverteilung abweichen. Um dies grafisch noch besser darzustellen, wird noch ein Q-Q Plot von den beiden Messwertreihen erstellt.
+```{r, fig.width=11, fig.height=7, fig.align='center'}
+par(mfrow=c(1,2))
+qqnorm(p0, col=c("blue"),main="Q-Q Plot von P0")
+qqline(p0)
+grid()
+qqnorm(p1, col=c("red"),main="Q-Q Plot von P1")
+qqline(p1)
+grid()
+box(lwd = 1)
+```
+
+Dieser Q-Q Plot weist auf, dass die Daten nicht normalverteilt sind, weil es eine grosse systematische Abweichung von der Diagonale enthält. Da es aber nicht empfehlenswert ist, nur aufgrund des Histogrammes oder Q-Q Plot auf die Normalverzeilung zu schliessen, wird sie auch noch mathematisch bewiesen. Daher wird zusätzlich der Shapiro-Wilk-Test durchgeführt[4].
+
+
+
+```{r}
+shapiro.test(p0)
+shapiro.test(p1)
+```
+
+Die p-Werte der Shapiro-Wilk-Tests sind $p_0$ = 6.526e-13 und $p_1$ = 7.136e-10 und liegen damit unter dem Signifikanzniveau von 0,05. Damit kann davon ausgegangen werden, dass die Daten von einer Normalverteilung abweichen. Da die Daten nicht normalverteilt sind, wird der t-Test keine grosse Aussagekraft haben[1][2]. Es wird zum Niveau $\alpha = 5\%$ getestet. 
+
+$$
+H_0: \mu_0 = \mu_1 \quad\text{ vs. }\quad H_1: \mu_0 < \mu_1
+$$
+
+
+```{r}
+t.test(p0, p1, alternative = "less", var.equal =T)
+```
+Die Nullhypothese wird verworfen, weil der p-Wert von $p$ = 0.0193 kleiner ist als das festgelegte Signifikanzniveau. Daher ist dieser Test statistisch signifikant.
+
+
+#### c) Wilcoxon-Rangsummentest 
+[6][7]Der Wilcoxon-Rangsummentest ist ein parameterfreier statistischer Test. Er dient zur Überprüfung der Signifikanz der Übereinstimmung zweier Verteilungen, also ob zwei Verteilungen A und B (zum Beispiel eine unbeeinflusste und eine beeinflusste) zu derselben Grundgesamtheit gehören. Der Test wurde von Henry Mann, Donald Whitney (1947), sowie Frank Wilcoxon (1945) entwickelt.
+
+Konkret finden der Wilcoxon-Test als Alternative zum t-Test Anwendung, wenn die Variablen bzw. Messungen sich als nicht annähernd normalverteilt erweisen. Der Wilcoxon-Test findet bei zwei verbundenen (gepaarten) Stichproben Anwendung und der U-Test untersucht, ob zwei unverbundene Verteilungen A und B signifikante Unterschiede aufweisen.
+
+```{r}
+wilcox.test(p0, p1, alternative = "less")
+```
+Die Durchführung des Wilcoxon-Rangsummentests ergibt für $p$ = 0.0003241, was ein hoch signifikantes Ergebnis darstellt. Somit kann mit hoher Wahrscheinlichkeit gesagt werden, dass die H0-Hypothese verworfen werden kann, was einer Verbesserung des Produktes durch die Neuentwicklung entspricht.
+
+
+### Quellen
+[1] http://www.methodenberatung.uzh.ch/de/datenanalyse/unterschiede/zentral/ttestunabh.html
+
+[2] http://scienceblogs.de/andererseits/2010/08/17/statistik-fur-anfanger-der-ttest/
+
+[3] http://www.sthda.com/english/wiki/f-test-compare-two-variances-in-r
+
+[4] https://statistikguru.de/spss/vorraussetzungen-ueberpruefen/pruefung-auf-normalverteilung/interpretation-der-ausgabe.html
+
+[5] http://www.sthda.com/english/wiki/normality-test-in-r
+
+[6] http://stat.ethz.ch/~meier/teaching/skript-intro/skript.pdf
+
+[7] https://de.wikipedia.org/wiki/Wilcoxon-Mann-Whitney-Test
+
+
