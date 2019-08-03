@@ -1,2 +1,2 @@
-# AngewandteStatistik
+# Angewandte Statistik
 blub
